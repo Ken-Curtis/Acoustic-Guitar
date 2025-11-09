@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Acoustic Guitar — Tự động phát từ YouTube</title>
+
+  <!-- Open Graph (Facebook/Zalo preview) -->
+  <meta property="og:title" content="Acoustic Guitar — Nghe Ngay" />
+  <meta property="og:description" content="Tự động phát tuyển tập guitar hòa tấu từ kênh YouTube. Bật tiếng để thưởng thức." />
+  <!-- Thay URL ảnh nếu bạn đặt hình trong repo (ví dụ /assets/cover.jpg) -->
+  <meta property="og:image" content="REPO_THUMBNAIL.jpg" />
+  <meta property="og:type" content="video.other" />
+  <meta property="og:url" content="" /> <!-- github pages URL sẽ tự động dùng -->
+
+  <style>
+    :root { --bg:#0f1114; --card:#111218; --accent:#f7c46c; color-scheme: dark; }
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+    body{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#071019 0%, #0b1220 100%);padding:24px}
+    .card{width:100%;max-width:960px;background:var(--card);border-radius:12px;padding:18px;box-shadow:0 8px 24px rgba(0,0,0,.6);color:#fff}
+    .title{font-size:20px;margin:0 0 8px 0;color:var(--accent)}
+    .subtitle{margin:0 0 14px 0;opacity:.9}
+    .player{position:relative;padding-top:56.25%;border-radius:8px;overflow:hidden;background:#000}
+    iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}
+    .controls{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+    .btn{background:transparent;border:1px solid rgba(255,255,255,.06);padding:8px 12px;border-radius:8px;color:#fff;cursor:pointer}
+    .note{font-size:13px;color:#cbd5e1;margin-top:12px;opacity:.9}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1 class="title">Acoustic Guitar — Tự động phát</h1>
+    <p class="subtitle">Nếu trình duyệt chặn autoplay, hãy nhấn nút Play hoặc bật tiếng sau khi trang load.</p>
+
+    <!-- ====================
+         CHỈNH Ở ĐÂY:
+         - Nếu bạn muốn phát 1 VIDEO đơn: set VIDEO_ID = 'eHcs9DtxzhA' và leave PLAYLIST_ID empty.
+         - Nếu bạn muốn phát một PLAYLIST: set PLAYLIST_ID = 'YOUR_PLAYLIST_ID' và leave VIDEO_ID empty.
+         ==================== -->
+    <div id="playerWrap" class="player" aria-hidden="false">
+      <!-- iframe sẽ được tạo bởi JavaScript -->
+      <div id="fallback" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;">
+        <button id="manualPlay" class="btn">Play</button>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="muteToggle" class="btn">Bật tiếng</button>
+      <a id="openYT" class="btn" href="#" target="_blank" rel="noopener">Mở trên YouTube</a>
+    </div>
+
+    <p class="note">Ghi chú: Nhiều trình duyệt chặn autoplay có âm thanh — trang sẽ autoplay khi video ở chế độ mute (tự tắt tiếng). Bạn có thể bật tiếng bằng nút "Bật tiếng".</p>
+  </div>
+
+  <script>
+    // ======= THAY THÔNG SỐ Ở ĐÂY =======
+    const VIDEO_ID = "eHcs9DtxzhA";        // Ví dụ "dQw4w9WgXcQ" (nếu muốn phát 1 video)
+    const PLAYLIST_ID = "YOUR_PLAYLIST_ID"; // hoặc "" nếu không dùng playlist
+    // ==================================
+
+    const playerWrap = document.getElementById('playerWrap');
+    const fallback = document.getElementById('fallback');
+    const manualPlay = document.getElementById('manualPlay');
+    const openYT = document.getElementById('openYT');
+    const muteToggle = document.getElementById('muteToggle');
+
+    function buildEmbedUrl() {
+      if(PLAYLIST_ID && PLAYLIST_ID.trim() !== "") {
+        // phát playlist (autoplay, muted, loop playlist)
+        return `https://www.youtube.com/embed?listType=playlist&list=${encodeURIComponent(PLAYLIST_ID)}&autoplay=1&mute=1&controls=1&rel=0&modestbranding=1`;
+      }
+      if(VIDEO_ID && VIDEO_ID.trim() !== "") {
+        // loop 1 video requires playlist param equal VIDEO_ID
+        return `https://www.youtube.com/embed/${encodeURIComponent(VIDEO_ID)}?autoplay=1&mute=1&controls=1&rel=0&modestbranding=1&loop=1&playlist=${encodeURIComponent(VIDEO_ID)}`;
+      }
+      return null;
+    }
+
+    function createIframe() {
+      const src = buildEmbedUrl();
+      if(!src) return;
+      const iframe = document.createElement('iframe');
+      iframe.setAttribute('allow', 'autoplay; encrypted-media; fullscreen');
+      iframe.src = src;
+      iframe.title = "YouTube player";
+      playerWrap.appendChild(iframe);
+      fallback.style.display = 'none';
+
+      // set openYT link
+      if(PLAYLIST_ID && PLAYLIST_ID.trim() !== "") {
+        openYT.href = `https://www.youtube.com/playlist?list=${encodeURIComponent(PLAYLIST_ID)}`;
+      } else if(VIDEO_ID && VIDEO_ID.trim() !== "") {
+        openYT.href = `https://www.youtube.com/watch?v=${encodeURIComponent(eHcs9DtxzhA)}`;
+      } else {
+        openYT.href = 'https://www.youtube.com';
+      }
+    }
+
+    // Try to create iframe on load (will autoplay muted on many browsers)
+    createIframe();
+
+    // Manual play if browser blocks autoplay
+    manualPlay.addEventListener('click', () => {
+      // if iframe not created (because user left IDs empty), do nothing
+      if(!playerWrap.querySelector('iframe')) createIframe();
+      // try to postMessage play command (works with youtube player API if available)
+      const iframe = playerWrap.querySelector('iframe');
+      if(iframe) {
+        try { iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*'); }
+        catch(e){ /* ignore */ }
+      }
+    });
+
+    // Toggle mute: since iframe was created muted, to unmute user typically must click play inside youtube
+    muteToggle.addEventListener('click', () => {
+      const iframe = playerWrap.querySelector('iframe');
+      if(!iframe) return;
+      // open in new tab so user can unmute manually (best compatibility)
+      const url = openYT.href || window.location.href;
+      window.open(url, '_blank');
+    });
+
+  </script>
+</body>
+</html>
